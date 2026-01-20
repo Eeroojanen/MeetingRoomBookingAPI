@@ -1,0 +1,91 @@
+@baseUrl = http://localhost:5177
+
+# Seeded room IDs from InMemoryRoomCatalog (change if you changed seeds)
+@roomId = 11111111-1111-1111-1111-111111111111
+
+# Paste a reservation id here after creating one (GET list shows it)
+@reservationId = 11111111-1111-1111-1111-111111111111
+
+
+### Health check (just to confirm server responds)
+GET {{baseUrl}}/api/rooms
+
+
+### List rooms (same as above, but kept separate)
+GET {{baseUrl}}/api/rooms
+
+
+### List reservations for a room
+GET {{baseUrl}}/api/rooms/{{roomId}}/reservations
+
+
+### List reservations for a room with optional filters (use ISO-8601 UTC)
+# Example:
+# GET {{baseUrl}}/api/rooms/{{roomId}}/reservations?fromUtc=2026-01-21T00:00:00Z&toUtc=2026-01-22T00:00:00Z
+GET {{baseUrl}}/api/rooms/{{roomId}}/reservations?fromUtc=2026-01-21T00:00:00Z&toUtc=2026-01-22T00:00:00Z
+
+
+### Create a reservation (MUST be in the future, UTC)
+# Expected: 201 Created
+POST {{baseUrl}}/api/rooms/{{roomId}}/reservations
+Content-Type: application/json
+
+{
+  "title": "Team sync",
+  "organizer": "Joona",
+  "startUtc": "2026-01-21T10:00:00Z",
+  "endUtc": "2026-01-21T11:00:00Z"
+}
+
+
+### Create an overlapping reservation (should fail)
+# Expected: 409 Conflict
+POST {{baseUrl}}/api/rooms/{{roomId}}/reservations
+Content-Type: application/json
+
+{
+  "title": "Overlapping meeting",
+  "organizer": "Joona",
+  "startUtc": "2026-01-21T10:30:00Z",
+  "endUtc": "2026-01-21T11:30:00Z"
+}
+
+
+### Create a reservation in the past (should fail)
+# Expected: 400 Bad Request
+POST {{baseUrl}}/api/rooms/{{roomId}}/reservations
+Content-Type: application/json
+
+{
+  "title": "Past meeting",
+  "organizer": "Joona",
+  "startUtc": "2020-01-01T10:00:00Z",
+  "endUtc": "2020-01-01T11:00:00Z"
+}
+
+
+### Create a reservation with invalid time range (end <= start)
+# Expected: 400 Bad Request
+POST {{baseUrl}}/api/rooms/{{roomId}}/reservations
+Content-Type: application/json
+
+{
+  "title": "Invalid range",
+  "organizer": "Joona",
+  "startUtc": "2026-01-21T12:00:00Z",
+  "endUtc": "2026-01-21T12:00:00Z"
+}
+
+
+### Cancel a reservation (paste a real id into @reservationId first)
+# Expected: 204 No Content
+DELETE {{baseUrl}}/api/rooms/{{roomId}}/reservations/{{reservationId}}
+
+
+### Cancel a reservation that doesn't exist (should fail) if you want to cancel reservation replace the reversationId with valid one
+# Expected: 404 Not Found
+DELETE {{baseUrl}}/api/rooms/{{roomId}}/reservations/11111111-1111-1111-1111-111111111111
+
+
+### List reservations again (verify cancel worked)
+GET {{baseUrl}}/api/rooms/{{roomId}}/reservations
