@@ -1,11 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
-using MeetingRoomBooking.Api.Contracts;
-using MeetingRoomBooking.Api.Domain;
+using MeetingRoomBooking.Api.Contracts.Requests;
+using MeetingRoomBooking.Api.Contracts.Responses;
+using MeetingRoomBooking.Api.Domain.Entities;
 using MeetingRoomBooking.Api.Tests.TestHost;
-using Moq;
+using MeetingRoomBooking.Api.Tests.TestHost;
 using Xunit;
+using Moq;
 
 namespace MeetingRoomBooking.Api.Tests.Endpoints;
 

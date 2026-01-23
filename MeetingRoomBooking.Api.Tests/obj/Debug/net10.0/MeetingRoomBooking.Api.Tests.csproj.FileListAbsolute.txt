@@ -423,3 +423,4 @@ C:\Users\Ertsi\source\MeetingRoomBooking.Api\MeetingRoomBooking.Api.Tests\obj\De
 C:\Users\Ertsi\source\MeetingRoomBooking.Api\MeetingRoomBooking.Api.Tests\obj\Debug\net10.0\MeetingRoomBooking.Api.Tests.pdb
 C:\Users\Ertsi\source\MeetingRoomBooking.Api\MeetingRoomBooking.Api.Tests\obj\Debug\net10.0\MeetingRoomBooking.Api.Tests.genruntimeconfig.cache
 C:\Users\Ertsi\source\MeetingRoomBooking.Api\MeetingRoomBooking.Api.Tests\obj\Debug\net10.0\ref\MeetingRoomBooking.Api.Tests.dll
+C:\Users\Ertsi\source\MeetingRoomBooking.Api\MeetingRoomBooking.Api.Tests\obj\Debug\net10.0\MeetingRoomBooking.Api.Tests.sourcelink.json
