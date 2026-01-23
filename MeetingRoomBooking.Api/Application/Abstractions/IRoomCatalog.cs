@@ -1,6 +1,6 @@
-using MeetingRoomBooking.Api.Domain;
+using MeetingRoomBooking.Api.Domain.Entities;
 
-namespace MeetingRoomBooking.Api.Storage;
+namespace MeetingRoomBooking.Api.Application.Abstractions;
 
 public interface IRoomCatalog
 {

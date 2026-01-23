@@ -33,3 +33,4 @@ C:\Users\Ertsi\source\MeetingRoomBooking.Api\MeetingRoomBooking.Api\obj\Debug\ne
 C:\Users\Ertsi\source\MeetingRoomBooking.Api\MeetingRoomBooking.Api\obj\Debug\net8.0\MeetingRoomBooking.Api.pdb
 C:\Users\Ertsi\source\MeetingRoomBooking.Api\MeetingRoomBooking.Api\obj\Debug\net8.0\MeetingRoomBooking.Api.genruntimeconfig.cache
 C:\Users\Ertsi\source\MeetingRoomBooking.Api\MeetingRoomBooking.Api\obj\Debug\net8.0\ref\MeetingRoomBooking.Api.dll
+C:\Users\Ertsi\source\MeetingRoomBooking.Api\MeetingRoomBooking.Api\obj\Debug\net8.0\MeetingRoomBooking.Api.sourcelink.json

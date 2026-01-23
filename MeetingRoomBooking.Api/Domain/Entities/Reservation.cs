@@ -1,4 +1,4 @@
-namespace MeetingRoomBooking.Api.Domain;
+namespace MeetingRoomBooking.Api.Domain.Entities;
 
 public sealed class Reservation
 {

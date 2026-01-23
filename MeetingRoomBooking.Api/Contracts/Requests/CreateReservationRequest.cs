@@ -1,4 +1,4 @@
-namespace MeetingRoomBooking.Api.Contracts;
+namespace MeetingRoomBooking.Api.Contracts.Requests;
 
 public sealed record CreateReservationRequest(
     string Title,

@@ -1,14 +1,12 @@
 using System.Collections.Concurrent;
-using MeetingRoomBooking.Api.Domain;
+using MeetingRoomBooking.Api.Application.Abstractions;
+using MeetingRoomBooking.Api.Domain.Entities;
 
-namespace MeetingRoomBooking.Api.Storage;
+namespace MeetingRoomBooking.Api.Infrastructure.Storage;
 
 public sealed class InMemoryReservationRepository : IReservationRepository
 {
-    // roomId -> list of reservations for that room
     private readonly ConcurrentDictionary<Guid, List<Reservation>> _byRoom = new();
-
-    // roomId -> lock object (keeps overlaps check + insert atomic)
     private readonly ConcurrentDictionary<Guid, object> _roomLocks = new();
 
     public IReadOnlyList<Reservation> GetByRoom(Guid roomId)
@@ -16,7 +14,6 @@ public sealed class InMemoryReservationRepository : IReservationRepository
         if (!_byRoom.TryGetValue(roomId, out var list))
             return Array.Empty<Reservation>();
 
-        // return snapshot
         lock (GetLock(roomId))
         {
             return list.ToList();
@@ -26,9 +23,8 @@ public sealed class InMemoryReservationRepository : IReservationRepository
     public (bool added, Reservation? conflicting) TryAdd(Reservation reservation)
     {
         var roomId = reservation.RoomId;
-        var roomLock = GetLock(roomId);
 
-        lock (roomLock)
+        lock (GetLock(roomId))
         {
             var list = _byRoom.GetOrAdd(roomId, _ => new List<Reservation>());
 
@@ -43,9 +39,7 @@ public sealed class InMemoryReservationRepository : IReservationRepository
 
     public bool Remove(Guid roomId, Guid reservationId)
     {
-        var roomLock = GetLock(roomId);
-
-        lock (roomLock)
+        lock (GetLock(roomId))
         {
             if (!_byRoom.TryGetValue(roomId, out var list))
                 return false;
@@ -59,6 +53,5 @@ public sealed class InMemoryReservationRepository : IReservationRepository
         }
     }
 
-    private object GetLock(Guid roomId)
-        => _roomLocks.GetOrAdd(roomId, _ => new object());
+    private object GetLock(Guid roomId) => _roomLocks.GetOrAdd(roomId, _ => new object());
 }

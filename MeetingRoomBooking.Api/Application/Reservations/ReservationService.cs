@@ -1,8 +1,9 @@
-using MeetingRoomBooking.Api.Contracts;
-using MeetingRoomBooking.Api.Domain;
-using MeetingRoomBooking.Api.Storage;
+using MeetingRoomBooking.Api.Application.Abstractions;
+using MeetingRoomBooking.Api.Application.Common;
+using MeetingRoomBooking.Api.Contracts.Requests;
+using MeetingRoomBooking.Api.Domain.Entities;
 
-namespace MeetingRoomBooking.Api.Services;
+namespace MeetingRoomBooking.Api.Application.Reservations;
 
 public sealed class ReservationService : IReservationService
 {
@@ -21,7 +22,6 @@ public sealed class ReservationService : IReservationService
 
     public Task<Result<Reservation>> CreateAsync(Guid roomId, CreateReservationRequest request)
     {
-        // Room exists?
         if (!_rooms.RoomExists(roomId))
         {
             return Task.FromResult(Result<Reservation>.Fail(new ApiError(
@@ -30,7 +30,6 @@ public sealed class ReservationService : IReservationService
                 StatusCodes.Status404NotFound)));
         }
 
-        // Basic field validation
         if (string.IsNullOrWhiteSpace(request.Title))
         {
             return Task.FromResult(Result<Reservation>.Fail(new ApiError(
@@ -47,7 +46,6 @@ public sealed class ReservationService : IReservationService
                 StatusCodes.Status400BadRequest)));
         }
 
-        // Valid time range
         if (request.EndUtc <= request.StartUtc)
         {
             return Task.FromResult(Result<Reservation>.Fail(new ApiError(
@@ -65,7 +63,6 @@ public sealed class ReservationService : IReservationService
                 StatusCodes.Status400BadRequest)));
         }
 
-        // No past reservations
         var now = _clock.UtcNow;
         if (request.StartUtc < now)
         {
@@ -84,7 +81,6 @@ public sealed class ReservationService : IReservationService
             endUtc: request.EndUtc,
             createdAtUtc: now);
 
-        // No overlapping booking
         var (added, conflicting) = _repo.TryAdd(reservation);
         if (!added)
         {

@@ -1,4 +1,4 @@
-namespace MeetingRoomBooking.Api.Contracts;
+namespace MeetingRoomBooking.Api.Contracts.Responses;
 
 public sealed record ReservationResponse(
     Guid Id,

@@ -1,4 +1,4 @@
-namespace MeetingRoomBooking.Api.Services;
+namespace MeetingRoomBooking.Api.Application.Abstractions;
 
 public interface IClock
 {
