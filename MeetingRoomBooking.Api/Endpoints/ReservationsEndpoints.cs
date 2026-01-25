@@ -12,10 +12,10 @@ public static class ReservationsEndpoints
     {
         app.MapGet("/api/rooms/{roomId:guid}/reservations",
             ([FromRoute] Guid roomId,
-             [FromQuery] DateTimeOffset? fromUtc,
-             [FromQuery] DateTimeOffset? toUtc,
-             IRoomCatalog roomCatalog,
-             IReservationRepository repo) =>
+            [FromQuery] DateTimeOffset? fromUtc,
+            [FromQuery] DateTimeOffset? toUtc,
+            IRoomCatalog roomCatalog,
+            IReservationRepository repo) =>
             {
                 if (!roomCatalog.RoomExists(roomId))
                 {
@@ -23,6 +23,14 @@ public static class ReservationsEndpoints
                         title: "Room not found",
                         detail: $"No meeting room exists with id '{roomId}'.",
                         statusCode: StatusCodes.Status404NotFound);
+                }
+
+                if (fromUtc is not null && toUtc is not null && fromUtc > toUtc)
+                {
+                    return Results.Problem(
+                        title: "Invalid date range",
+                        detail: "fromUtc must be earlier than or equal to toUtc.",
+                        statusCode: StatusCodes.Status400BadRequest);
                 }
 
                 IEnumerable<MeetingRoomBooking.Api.Domain.Entities.Reservation> reservations =
