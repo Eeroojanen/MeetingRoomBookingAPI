@@ -46,6 +46,14 @@ public sealed class ReservationService : IReservationService
                 StatusCodes.Status400BadRequest)));
         }
 
+        if (request.StartUtc.Offset != TimeSpan.Zero || request.EndUtc.Offset != TimeSpan.Zero)
+        {
+            return Task.FromResult(Result<Reservation>.Fail(new ApiError(
+                "Invalid time zone",
+                "StartUtc and EndUtc must be provided in UTC (offset +00:00).",
+                StatusCodes.Status400BadRequest)));
+        }
+
         if (request.EndUtc <= request.StartUtc)
         {
             return Task.FromResult(Result<Reservation>.Fail(new ApiError(
