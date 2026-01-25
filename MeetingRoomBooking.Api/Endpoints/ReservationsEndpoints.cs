@@ -54,7 +54,8 @@ public static class ReservationsEndpoints
                 var outcome = await service.CreateAsync(roomId, request);
 
                 return outcome.Match<IResult>(
-                    created => Results.Created($"/api/rooms/{roomId}/reservations",
+                    created => Results.Created(
+                        $"/api/rooms/{roomId}/reservations/{created.Id}",
                         new ReservationResponse(
                             created.Id, created.RoomId, created.Title, created.Organizer,
                             created.StartUtc, created.EndUtc, created.CreatedAtUtc)),
