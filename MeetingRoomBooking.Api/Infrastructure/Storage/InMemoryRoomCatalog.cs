@@ -5,12 +5,12 @@ namespace MeetingRoomBooking.Api.Infrastructure.Storage;
 
 public sealed class InMemoryRoomCatalog : IRoomCatalog
 {
-    private readonly List<Room> _rooms = new()
+    private readonly IReadOnlyList<Room> _rooms = new List<Room>
     {
         new Room(Guid.Parse("11111111-1111-1111-1111-111111111111"), "Neon",   "Floor 1", 6),
         new Room(Guid.Parse("22222222-2222-2222-2222-222222222222"), "Aurora", "Floor 2", 10),
         new Room(Guid.Parse("33333333-3333-3333-3333-333333333333"), "Nimbus", "Floor 3", 4),
-    };
+    }.AsReadOnly();
 
     public IReadOnlyList<Room> GetAllRooms() => _rooms;
 
