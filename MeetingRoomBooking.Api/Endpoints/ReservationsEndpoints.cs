@@ -2,6 +2,7 @@ using MeetingRoomBooking.Api.Application.Abstractions;
 using MeetingRoomBooking.Api.Application.Reservations;
 using MeetingRoomBooking.Api.Contracts.Requests;
 using MeetingRoomBooking.Api.Contracts.Responses;
+using MeetingRoomBooking.Api.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MeetingRoomBooking.Api.Endpoints;
@@ -33,8 +34,7 @@ public static class ReservationsEndpoints
                         statusCode: StatusCodes.Status400BadRequest);
                 }
 
-                IEnumerable<MeetingRoomBooking.Api.Domain.Entities.Reservation> reservations =
-                    repo.GetByRoom(roomId);
+                IEnumerable<Reservation> reservations = repo.GetByRoom(roomId);
 
                 if (fromUtc is not null)
                     reservations = reservations.Where(r => r.StartUtc >= fromUtc.Value);
