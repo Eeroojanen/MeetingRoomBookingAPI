@@ -1,636 +1,336 @@
-Teköäly prompti: "I want to you make a simple meeting room booking API. Design a simple RESTful API for managing meeting room reservations. Core features should be creating a reservation nook a specific meeting room for a given time interval, cancel a reservation remove an existing booking and view reservations list all reservations for a specific meeting room. Rules for API No overlapping booking, No past reservations and Valid time range. Use C# and .NET for this project"
+# PROMPTIT.md  
+AI Prompt Documentation – Meeting Room Booking API Project
 
-Tekoäly vastaus: "Below is a complete, simple ASP.NET Core Web API project for a Meeting Room Booking System with the rules you listed:
+This file documents the prompts used with an AI assistant and the essential parts of the responses that guided the development of the Meeting Room Booking API project.  
+Some AI responses have been slightly shortened to include only the most relevant information.
 
-No overlapping bookings (for the same room)
+---
 
-No past reservations (start time must be >= “now”, using UTC)
+## Prompt 1
 
-Valid time range (end must be > start)
+**Tekoäly prompti:**
 
-It uses an in-memory repository (so you can run it immediately without a DB). You can later swap the repository for EF Core/Cosmos/etc.
+"I want to you make a simple meeting room booking API. Design a simple RESTful API for managing meeting room reservations. Core features should be creating a reservation nook a specific meeting room for a given time interval, cancel a reservation remove an existing booking and view reservations list all reservations for a specific meeting room. Rules for API No overlapping booking, No past reservations and Valid time range. Use C# and .NET for this project"
 
-Project name
+**Tekoäly vastaus (tiivistetty):**
 
-Recommended: MeetingRoomBooking.Api (cleaner for a solution that may later include .Domain, .Infrastructure, etc.)
+Provided a complete ASP.NET Core Web API design for a Meeting Room Booking System with:
 
-API design
-Endpoints
+- Endpoints for creating, listing and cancelling reservations  
+- Business rules:
+  - No overlapping reservations  
+  - No reservations in the past  
+  - Start time must be before end time  
 
-GET /api/rooms
-List meeting rooms (seeded).
+- Suggested using an in-memory repository for storage  
+- Defined the overlap rule:  
+  `newStart < existingEnd && newEnd > existingStart`
 
-GET /api/rooms/{roomId}/reservations
-List reservations for a room. Optional query:
+---
 
-?fromUtc=...&toUtc=... (ISO-8601 UTC)
+## Prompt 2
 
-POST /api/rooms/{roomId}/reservations
-Create a reservation in a room for a time interval (UTC).
+**Tekoäly prompti:**
 
-DELETE /api/rooms/{roomId}/reservations/{reservationId}
-Cancel (remove) a reservation.
+"error CS0266: Cannot implicitly convert type 'System.Collections.Generic.IEnumerable<MeetingRoomBooking.Api.Domain.Reservation>' to 'System.Collections.Generic.IReadOnlyList<MeetingRoomBooking.Api.Domain.Reservation>'. An explicit conversion exists (are you missing a cast?)"
 
-Reservation overlap rule
+**Tekoäly vastaus (tiivistetty):**
 
-Two reservations overlap if:
+Explained that LINQ `Where()` returns `IEnumerable<T>`, which cannot be assigned to `IReadOnlyList<T>`.
 
-newStart < existingEnd && newEnd > existingStart"
+Suggested fix:
 
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+- Use `IEnumerable<Reservation>` while filtering  
+- Convert to a list at the end using `.ToList()`
 
-Tekoäly prompti: "error CS0266: Cannot implicitly convert type 'System.Collections.Generic.IEnumerable<MeetingRoomBooking.Api.Domain.Reservation>' to 'System.Collections.Generic.IReadOnlyList<MeetingRoomBooking.Api.Domain.Reservation>'. An explicit conversion exists (are you missing a cast?)" 
+This resolved the type conversion error.
 
-Tekäly vastaus: "Good catch — this is a classic C# type issue.
-The error happens because after filtering with Where(...), the variable becomes an IEnumerable<Reservation>, but the method signature (and later code) expects an IReadOnlyList<Reservation>.
+---
 
-Specifically in Program.cs inside:
+## Prompt 3
 
-var reservations = repo.GetByRoom(roomId);
+**Tekoäly prompt:**
 
-if (fromUtc is not null)
-    reservations = reservations.Where(r => r.StartUtc >= fromUtc.Value);
+"Generate me a http.rest file which allows me to test api endpoints"
 
-if (toUtc is not null)
-    reservations = reservations.Where(r => r.EndUtc <= toUtc.Value);
+**Tekoäly vastaus (tiivistetty):**
 
+Generated a `http.rest` file for VS Code REST Client containing:
 
-repo.GetByRoom(...) returns IReadOnlyList<Reservation>,
-but .Where(...) returns IEnumerable<Reservation> → incompatible assignment.
+- Requests for:
+  - Listing rooms  
+  - Listing reservations  
+  - Creating reservations (valid, overlapping, past, invalid range)  
+  - Cancelling reservations  
 
-✅ Fix (recommended)
+- Included example JSON bodies and expected HTTP status codes (201, 400, 409, 204).
 
-Change the variable type to IEnumerable<Reservation> and materialize to a list only at the end.
+---
 
-Replace that whole block with this:
-IEnumerable<MeetingRoomBooking.Api.Domain.Reservation> reservations =
-    repo.GetByRoom(roomId);
+## Prompt 4
 
-if (fromUtc is not null)
-    reservations = reservations.Where(r => r.StartUtc >= fromUtc.Value);
+**Tekoäly prompt:**
 
-if (toUtc is not null)
-    reservations = reservations.Where(r => r.EndUtc <= toUtc.Value);
+"Create xUnit test cases for my ASP.NET Core Web API endpoints and use Moq to mock all data dependencies."
 
-var result = reservations
-    .OrderBy(r => r.StartUtc)
-    .Select(r => new MeetingRoomBooking.Api.Contracts.ReservationResponse(
-        r.Id, r.RoomId, r.Title, r.Organizer, r.StartUtc, r.EndUtc, r.CreatedAtUtc))
-    .ToList();
+**Tekoäly vastaus (tiivistetty):**
 
-return Results.Ok(result);
+Provided an automated testing setup using:
 
+- xUnit with `WebApplicationFactory`  
+- Moq to mock all data dependencies (IRoomCatalog, IReservationRepository, IClock, IReservationService)  
 
-This way:
+Included:
 
-Internally we use IEnumerable for filtering
+- Test factory to inject mocked services  
+- Example endpoint tests for:
+  - Listing rooms and reservations  
+  - Creating reservations (success, invalid, past, overlapping)  
+  - Cancelling reservations (success and not found)  
 
-At the end we convert to a concrete List<T> for the response
+Also instructed to add:
 
-🔍 Why this happens
+"```csharp
+public partial class Program { }"
 
-IReadOnlyList<T> is more specific than IEnumerable<T>
+---
 
-LINQ operators (Where, Select, etc.) always return IEnumerable<T>
+## Prompt 5
 
-C# does not allow assigning a more general type back into a more specific one"
+**Tekoäly prompt:**
 
-----------------------------------------------------------------------------------------------
+"Separate API plumbing from business logic, group things by responsibility (Application vs Infrastructure), keep Domain clean (no DTOs, no storage concerns), reduce Program.cs bloat by moving endpoint mapping out, and prepare the project for swapping InMemory → EF Core later without touching business logic."
 
-Tekoäly prompt: "Generate me a http.rest file which allows me to test api endpoints"
+**Tekoäly vastaus (tiivistetty):**
 
-Tekoäly vastaus: "Here’s a ready-to-use http.rest file for VS Code’s REST Client extension (Huachao Mao). It covers:
+Suggested reorganizing the project using a Clean Architecture approach:
 
-list rooms
+- Keep Domain clean and independent  
+- Move interfaces to Application layer  
+- Move implementations to Infrastructure layer  
+- Move business services to Application  
+- Extract endpoint mappings into separate files  
+- Keep `Program.cs` minimal  
 
-list reservations for a room
+This prepares the project for replacing the in-memory storage with EF Core later without changing business logic.
 
-create a reservation (future)
+---
 
-create overlap (expects 409)
+## Prompt 6
 
-create past (expects 400)
+**Tekoäly prompt:**
 
-create invalid time range (expects 400)
+"My CreateReservation endpoint returns a 201 Created response with a Location header that does not include the new resource ID (it returns /api/rooms/{roomId}/reservations). Shouldn’t the Location header point to /api/rooms/{roomId}/reservations/{reservationId} instead?"
 
-cancel reservation (expects 204 once you paste a real reservation id)
+**Tekoäly vastaus (tiivistetty):**
 
-Update @baseUrl if your port changes (yours is 5177).
+Confirmed that the Location header in a 201 Created response should point to the newly created resource, not the collection:
 
-@baseUrl = http://localhost:5177
+The correct URL format is
+/api/rooms/{roomId}/reservations/{reservationId}
 
-# Seeded room IDs from InMemoryRoomCatalog (change if you changed seeds)
-@roomId = 11111111-1111-1111-1111-111111111111
+The current value does not uniquely identify the created reservation
 
-# Paste a reservation id here after creating one (GET list shows it)
-@reservationId = 00000000-0000-0000-0000-000000000000
+The endpoint should include the reservation ID in the Location header
 
+Recommended using a named route (CreatedAtRoute) instead of a hard-coded URL for better maintainability
 
-### Health check (just to confirm server responds)
-GET {{baseUrl}}/api/rooms
+This makes the API follow proper REST conventions and ensures clients receive a canonical URL for the created resource.
 
+---
 
-### List rooms (same as above, but kept separate)
-GET {{baseUrl}}/api/rooms
+## Prompt 7
 
+**Tekoäly prompt:**
 
-### List reservations for a room
-GET {{baseUrl}}/api/rooms/{{roomId}}/reservations
+"The GET listing endpoint currently does not validate the logical order of the fromUtc and toUtc query parameters. When fromUtc > toUtc, it simply returns an empty result. I want the API to return a 400 Bad Request with a clear validation error message in this case."
 
+**Tekoäly vastaus (tiivistetty):**
 
-### List reservations for a room with optional filters (use ISO-8601 UTC)
-# Example:
-# GET {{baseUrl}}/api/rooms/{{roomId}}/reservations?fromUtc=2026-01-21T00:00:00Z&toUtc=2026-01-22T00:00:00Z
-GET {{baseUrl}}/api/rooms/{{roomId}}/reservations?fromUtc=2026-01-21T00:00:00Z&toUtc=2026-01-22T00:00:00Z
+Confirmed that the API should validate the logical order of the fromUtc and toUtc query parameters.
 
+When fromUtc > toUtc, the request represents an invalid date range and should not be treated as a normal query.
 
-### Create a reservation (MUST be in the future, UTC)
-# Expected: 201 Created
-POST {{baseUrl}}/api/rooms/{{roomId}}/reservations
-Content-Type: application/json
+The current behavior returns an empty list with a 200 OK response, which is misleading because it hides the fact that the client provided invalid input.
 
+Recommended adding an explicit validation check before applying filters.
+
+When both parameters are provided and fromUtc is later than toUtc, the endpoint should return a 400 Bad Request.
+
+Suggested returning a clear validation error message such as:
+"fromUtc must be earlier than or equal to toUtc."
+
+This makes the API behavior more predictable, helps clients detect invalid requests, and clearly distinguishes between an empty result and a logically invalid query.
+
+---
+
+## Prompt 8
+
+**Tekoäly prompt:**
+
+"The CreateReservation endpoint currently accepts DateTimeOffset values that are not in UTC (e.g. StartUtc.Offset != TimeSpan.Zero).
+
+Even though the request schema/documentation requires UTC timestamps, this is not validated.
+
+I want the API to reject non-UTC values and return a 400 Bad Request with a clear validation error message."
+
+**Tekoäly vastaus (tiivistetty):**
+
+Add a validation in ReservationService.CreateAsync to reject non-UTC DateTimeOffset values.
+The check is placed after the title/organizer validation and before the time-range validation.
+
+If StartUtc.Offset or EndUtc.Offset ≠ TimeSpan.Zero
+→ return 400 Bad Request
+→ error: “StartUtc and EndUtc must be provided in UTC (offset +00:00).”
+
+Goal: ensure all timestamps are always provided in UTC (+00:00).
+
+---
+
+## Prompt 9
+
+**Tekoäly prompt:**
+
+The Result<T>.Match method currently uses Value! to bypass nullability checks.
+
+If Success == true but Value is null, this can cause a NullReferenceException when Match tries to access it.
+
+I want to make this API safe against null values.
+
+Should I add a generic constraint like where T : notnull, add a runtime check, or both?
+
+How should I change the code to prevent this issue?
+
+**Tekoäly vastaus (tiivistetty):**
+
+Recommendation: add both compile-time and runtime null-safety to Result<T>:
+
+Compile-time guard: add where T : notnull to Result<T>
+→ prevents creating types like Result<string?>.
+
+Runtime guard: add a null check in Match (or in the Success factory)
+→ throws a clear exception if a “successful” result contains a null value, instead of causing a later NRE.
+
+Why:
+
+where T : notnull blocks null success values at compile time.
+
+Runtime checks protect against nulls still leaking in (e.g., via reflection, serialization, or broken call sites).
+
+Minimal option:
+Only add the null check to the Success factory for lightweight protection.
+
+---
+
+## Prompt 10
+
+**Tekoäly prompt:**
+
+The CreateAsync method currently uses Task.FromResult(...) in several return paths.
+
+The method does not perform any real asynchronous operations.
+
+I want to simplify this by either making the method synchronous or converting it to an async method and returning results directly.
+
+**Tekoäly vastaus (tiivistetty):**
+
+Because CreateAsync performs no real asynchronous work, the cleanest solution is to make it synchronous.
+This requires updating the interface and all call sites.
+
+Option A (recommended): Make it synchronous
+
+Change the interface and implementation:
+
+Task<Result<Reservation>> CreateAsync(...)
+→ Result<Reservation> Create(...)
+
+Replace all:
+
+Task.FromResult(Result<Reservation>.Fail(...)) / Success(...)
+with:
+
+return Result<Reservation>.Fail(...) / Success(...)
+
+Update call sites (e.g. endpoints):
+
+await service.CreateAsync(...)
+→ service.Create(...) (no await)
+
+Why:
+The method is fully synchronous, so its signature should reflect that. This simplifies the code and avoids unnecessary Task allocations.
+
+Option B: Keep the async signature (not recommended)
+public async Task<Result<Reservation>> CreateAsync(...)
+
+
+No await → compiler warning
+
+Still creates a Task unnecessarily
+
+Adds async overhead with no benefit
+
+Recommendation
+
+Option A is the clearest and most correct solution in the current state.
+You can always switch back to CreateAsync later if real async I/O (e.g. DB calls) is added.
+
+---
+
+## Prompt 11
+
+**Tekoäly prompt:**
+
+The reservation repository uses locks, but the room catalog (InMemoryRoomCatalog) does not.
+
+This means the overall in-memory implementation is not fully thread-safe.
+
+If the application runs in a multi-threaded environment, callers could observe inconsistent state or modify shared data concurrently.
+
+Would it be better to make the room list immutable (e.g. readonly, IReadOnlyList, or a defensive copy)?
+
+What is the recommended approach to make this design thread-safe?
+
+**Tekoäly vastaus (tiivistetty):**
+
+Recommendation: Make the rooms list immutable and expose only a read-only view or a copy.
+This gives you thread safety without locks.
+
+Simple and safe approach
+
+Keep _rooms readonly and never modify it after initialization.
+
+Return a read-only view or a copy:
+
+Use AsReadOnly() if the list never changes (no allocations).
+
+Use ToList() if you want a fully detached copy on each call.
+
+Why this is thread-safe
+
+When data never changes, concurrent reads are safe.
+
+The only real risk is external code mutating the internal list → prevented by returning read-only/copies.
+
+Example (lightweight, thread-safe)
+private readonly IReadOnlyList<Room> _rooms = new List<Room>
 {
-  "title": "Team sync",
-  "organizer": "Eero",
-  "startUtc": "2026-01-21T10:00:00Z",
-  "endUtc": "2026-01-21T11:00:00Z"
-}
+    new Room(...)
+}.AsReadOnly();
 
+public IReadOnlyList<Room> GetAllRooms() => _rooms;
 
-### Create an overlapping reservation (should fail)
-# Expected: 409 Conflict
-POST {{baseUrl}}/api/rooms/{{roomId}}/reservations
-Content-Type: application/json
+When would locks be needed?
 
-{
-  "title": "Overlapping meeting",
-  "organizer": "Eero",
-  "startUtc": "2026-01-21T10:30:00Z",
-  "endUtc": "2026-01-21T11:30:00Z"
-}
+If rooms are added or removed at runtime:
 
+Use a ConcurrentDictionary, or
 
-### Create a reservation in the past (should fail)
-# Expected: 400 Bad Request
-POST {{baseUrl}}/api/rooms/{{roomId}}/reservations
-Content-Type: application/json
+Protect mutations with lock and return copies.
 
-{
-  "title": "Past meeting",
-  "organizer": "Eero",
-  "startUtc": "2020-01-01T10:00:00Z",
-  "endUtc": "2020-01-01T11:00:00Z"
-}
+Summary:
 
+If the list is static → immutability + read-only exposure is the cleanest and most efficient.
 
-### Create a reservation with invalid time range (end <= start)
-# Expected: 400 Bad Request
-POST {{baseUrl}}/api/rooms/{{roomId}}/reservations
-Content-Type: application/json
+If the list can change → you need locks or a thread-safe collection.
 
-{
-  "title": "Invalid range",
-  "organizer": "Eero",
-  "startUtc": "2026-01-21T12:00:00Z",
-  "endUtc": "2026-01-21T12:00:00Z"
-}
-
-
-### Cancel a reservation (paste a real id into @reservationId first)
-# Expected: 204 No Content
-DELETE {{baseUrl}}/api/rooms/{{roomId}}/reservations/{{reservationId}}
-
-
-### Cancel a reservation that doesn't exist (should fail)
-# Expected: 404 Not Found
-DELETE {{baseUrl}}/api/rooms/{{roomId}}/reservations/99999999-9999-9999-9999-999999999999
-
-
-### List reservations again (verify cancel worked)
-GET {{baseUrl}}/api/rooms/{{roomId}}/reservations
-
-
-Tip for workflow:
-
-Run Create a reservation → copy the "id" from the response or from the reservation list.
-
-Paste it into @reservationId.
-
-Run the DELETE request.
-
-If you want, I can tweak this so the times are always “future” relative to today (REST Client can’t compute dynamic times easily, but we can make it easier with a few preset date blocks).
-
-
-------------------------------------------------------------------------------------------------------------------
-
-Tekoäly prompt: "Create xUnit test cases for my ASP.NET Core Web API endpoints and use Moq to mock all data dependencies."
-
-Tekoäly vastaus: " Below is a complete set of xUnit endpoint tests for your Minimal API using WebApplicationFactory + Moq to mock all data dependencies (IRoomCatalog, IReservationRepository, IClock, and even IReservationService where useful).
-
-I’m assuming your API project is named MeetingRoomBooking.Api and contains the interfaces exactly like we built.
-
-0) One small change required in your API project
-
-Minimal APIs need a Program class exposed for WebApplicationFactory.
-
-Add this at the bottom of Program.cs (outside any namespace):
-
-public partial class Program { }
-
-
-That’s it.
-
-1) Create a test project
-
-From the solution folder:
-
-dotnet new xunit -n MeetingRoomBooking.Api.Tests
-dotnet add MeetingRoomBooking.Api.Tests reference MeetingRoomBooking.Api/MeetingRoomBooking.Api.csproj
-
-
-Add packages:
-
-dotnet add MeetingRoomBooking.Api.Tests package Microsoft.AspNetCore.Mvc.Testing
-dotnet add MeetingRoomBooking.Api.Tests package Moq
-dotnet add MeetingRoomBooking.Api.Tests package xunit.runner.visualstudio
-
-
-(Optional but recommended)
-
-dotnet add MeetingRoomBooking.Api.Tests package FluentAssertions
-
-2) MeetingRoomBooking.Api.Tests.csproj
-
-Make sure your test .csproj looks roughly like this (net8.0 is fine even if the app is net8.0):
-
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <IsPackable>false</IsPackable>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.0" />
-    <PackageReference Include="Moq" Version="4.20.72" />
-    <PackageReference Include="xunit" Version="2.6.6" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
-    <PackageReference Include="FluentAssertions" Version="6.12.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\MeetingRoomBooking.Api\MeetingRoomBooking.Api.csproj" />
-  </ItemGroup>
-
-</Project>
-
-
-(Exact versions aren’t critical as long as they restore.)
-
-3) Test factory that injects mocks
-
-Create: TestHost/ApiFactory.cs
-
-using MeetingRoomBooking.Api.Services;
-using MeetingRoomBooking.Api.Storage;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Moq;
-
-namespace MeetingRoomBooking.Api.Tests.TestHost;
-
-public sealed class ApiFactory : WebApplicationFactory<Program>
-{
-    public Mock<IRoomCatalog> RoomCatalogMock { get; } = new();
-    public Mock<IReservationRepository> ReservationRepositoryMock { get; } = new();
-    public Mock<IClock> ClockMock { get; } = new();
-    public Mock<IReservationService> ReservationServiceMock { get; } = new();
-
-    // By default, we test real endpoint -> real ReservationService
-    // so we won't register ReservationServiceMock unless a test wants it.
-    public bool UseMockReservationService { get; set; } = false;
-
-    protected override void ConfigureWebHost(IWebHostBuilder builder)
-    {
-        builder.ConfigureServices(services =>
-        {
-            // Remove existing registrations from the API project
-            RemoveAll<IRoomCatalog>(services);
-            RemoveAll<IReservationRepository>(services);
-            RemoveAll<IClock>(services);
-            RemoveAll<IReservationService>(services);
-
-            // Register mocks
-            services.AddSingleton(RoomCatalogMock.Object);
-            services.AddSingleton(ReservationRepositoryMock.Object);
-            services.AddSingleton(ClockMock.Object);
-
-            if (UseMockReservationService)
-            {
-                services.AddSingleton(ReservationServiceMock.Object);
-            }
-            else
-            {
-                // Use real business rules with mocked data deps
-                services.AddSingleton<IReservationService, ReservationService>();
-            }
-        });
-    }
-
-    private static void RemoveAll<T>(IServiceCollection services)
-    {
-        var descriptors = services.Where(d => d.ServiceType == typeof(T)).ToList();
-        foreach (var d in descriptors)
-            services.Remove(d);
-    }
-}
-
-4) Endpoint tests (real service, mocked data deps)
-
-Create: Endpoints/ReservationsEndpointsTests.cs
-
-using System.Net;
-using System.Net.Http.Json;
-using FluentAssertions;
-using MeetingRoomBooking.Api.Contracts;
-using MeetingRoomBooking.Api.Domain;
-using MeetingRoomBooking.Api.Tests.TestHost;
-using Moq;
-using Xunit;
-
-namespace MeetingRoomBooking.Api.Tests.Endpoints;
-
-public sealed class ReservationsEndpointsTests
-{
-    private static readonly Guid RoomId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-
-    [Fact]
-    public async Task GetRooms_Returns200AndList()
-    {
-        var factory = new ApiFactory();
-
-        // The /api/rooms endpoint uses IRoomCatalog.GetAllRooms()
-        factory.RoomCatalogMock
-            .Setup(x => x.GetAllRooms())
-            .Returns(new List<Room>
-            {
-                new(RoomId, "Neon", "Floor 1", 6),
-            });
-
-        var client = factory.CreateClient();
-
-        var res = await client.GetAsync("/api/rooms");
-        res.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var body = await res.Content.ReadFromJsonAsync<List<RoomResponse>>();
-        body.Should().NotBeNull();
-        body!.Should().HaveCount(1);
-        body[0].Id.Should().Be(RoomId);
-    }
-
-    [Fact]
-    public async Task ListReservations_RoomNotFound_Returns404()
-    {
-        var factory = new ApiFactory();
-
-        factory.RoomCatalogMock
-            .Setup(x => x.RoomExists(RoomId))
-            .Returns(false);
-
-        var client = factory.CreateClient();
-
-        var res = await client.GetAsync($"/api/rooms/{RoomId}/reservations");
-        res.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-
-    [Fact]
-    public async Task ListReservations_Returns200AndSorted()
-    {
-        var factory = new ApiFactory();
-
-        factory.RoomCatalogMock.Setup(x => x.RoomExists(RoomId)).Returns(true);
-
-        var r1 = new Reservation(Guid.NewGuid(), RoomId, "B", "Eero",
-            DateTimeOffset.Parse("2026-01-21T11:00:00Z"),
-            DateTimeOffset.Parse("2026-01-21T12:00:00Z"),
-            DateTimeOffset.Parse("2026-01-20T09:00:00Z"));
-
-        var r2 = new Reservation(Guid.NewGuid(), RoomId, "A", "Eero",
-            DateTimeOffset.Parse("2026-01-21T10:00:00Z"),
-            DateTimeOffset.Parse("2026-01-21T11:00:00Z"),
-            DateTimeOffset.Parse("2026-01-20T09:00:00Z"));
-
-        factory.ReservationRepositoryMock
-            .Setup(x => x.GetByRoom(RoomId))
-            .Returns(new List<Reservation> { r1, r2 });
-
-        var client = factory.CreateClient();
-
-        var res = await client.GetAsync($"/api/rooms/{RoomId}/reservations");
-        res.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var body = await res.Content.ReadFromJsonAsync<List<ReservationResponse>>();
-        body.Should().NotBeNull();
-        body!.Should().HaveCount(2);
-        body[0].StartUtc.Should().Be(r2.StartUtc); // sorted ascending by StartUtc
-        body[1].StartUtc.Should().Be(r1.StartUtc);
-    }
-
-    [Fact]
-    public async Task CreateReservation_RoomNotFound_Returns404()
-    {
-        var factory = new ApiFactory();
-
-        factory.RoomCatalogMock.Setup(x => x.RoomExists(RoomId)).Returns(false);
-
-        var client = factory.CreateClient();
-
-        var req = new CreateReservationRequest(
-            Title: "Team sync",
-            Organizer: "Eero",
-            StartUtc: DateTimeOffset.Parse("2026-01-21T10:00:00Z"),
-            EndUtc: DateTimeOffset.Parse("2026-01-21T11:00:00Z"));
-
-        var res = await client.PostAsJsonAsync($"/api/rooms/{RoomId}/reservations", req);
-        res.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-
-    [Fact]
-    public async Task CreateReservation_InvalidTimeRange_Returns400()
-    {
-        var factory = new ApiFactory();
-
-        factory.RoomCatalogMock.Setup(x => x.RoomExists(RoomId)).Returns(true);
-        factory.ClockMock.Setup(x => x.UtcNow).Returns(DateTimeOffset.Parse("2026-01-20T09:00:00Z"));
-
-        var client = factory.CreateClient();
-
-        var req = new CreateReservationRequest(
-            Title: "Bad range",
-            Organizer: "Eero",
-            StartUtc: DateTimeOffset.Parse("2026-01-21T11:00:00Z"),
-            EndUtc: DateTimeOffset.Parse("2026-01-21T10:00:00Z"));
-
-        var res = await client.PostAsJsonAsync($"/api/rooms/{RoomId}/reservations", req);
-        res.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-    }
-
-    [Fact]
-    public async Task CreateReservation_InThePast_Returns400()
-    {
-        var factory = new ApiFactory();
-
-        factory.RoomCatalogMock.Setup(x => x.RoomExists(RoomId)).Returns(true);
-        factory.ClockMock.Setup(x => x.UtcNow).Returns(DateTimeOffset.Parse("2026-01-21T10:00:00Z"));
-
-        var client = factory.CreateClient();
-
-        var req = new CreateReservationRequest(
-            Title: "Past meeting",
-            Organizer: "Eero",
-            StartUtc: DateTimeOffset.Parse("2026-01-21T09:00:00Z"),
-            EndUtc: DateTimeOffset.Parse("2026-01-21T10:00:00Z"));
-
-        var res = await client.PostAsJsonAsync($"/api/rooms/{RoomId}/reservations", req);
-        res.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-    }
-
-    [Fact]
-    public async Task CreateReservation_Overlapping_Returns409()
-    {
-        var factory = new ApiFactory();
-
-        factory.RoomCatalogMock.Setup(x => x.RoomExists(RoomId)).Returns(true);
-        factory.ClockMock.Setup(x => x.UtcNow).Returns(DateTimeOffset.Parse("2026-01-20T09:00:00Z"));
-
-        // Make repo say "conflict"
-        var conflicting = new Reservation(
-            Guid.NewGuid(),
-            RoomId,
-            "Existing",
-            "Someone",
-            DateTimeOffset.Parse("2026-01-21T10:00:00Z"),
-            DateTimeOffset.Parse("2026-01-21T11:00:00Z"),
-            DateTimeOffset.Parse("2026-01-20T09:00:00Z"));
-
-        factory.ReservationRepositoryMock
-            .Setup(x => x.TryAdd(It.IsAny<Reservation>()))
-            .Returns((false, conflicting));
-
-        var client = factory.CreateClient();
-
-        var req = new CreateReservationRequest(
-            Title: "New one",
-            Organizer: "Eero",
-            StartUtc: DateTimeOffset.Parse("2026-01-21T10:30:00Z"),
-            EndUtc: DateTimeOffset.Parse("2026-01-21T11:30:00Z"));
-
-        var res = await client.PostAsJsonAsync($"/api/rooms/{RoomId}/reservations", req);
-        res.StatusCode.Should().Be(HttpStatusCode.Conflict);
-    }
-
-    [Fact]
-    public async Task CreateReservation_Success_Returns201AndBody()
-    {
-        var factory = new ApiFactory();
-
-        factory.RoomCatalogMock.Setup(x => x.RoomExists(RoomId)).Returns(true);
-        factory.ClockMock.Setup(x => x.UtcNow).Returns(DateTimeOffset.Parse("2026-01-20T09:00:00Z"));
-
-        // Make repo accept reservation
-        factory.ReservationRepositoryMock
-            .Setup(x => x.TryAdd(It.IsAny<Reservation>()))
-            .Returns((true, (Reservation?)null));
-
-        var client = factory.CreateClient();
-
-        var req = new CreateReservationRequest(
-            Title: "Team sync",
-            Organizer: "Eero",
-            StartUtc: DateTimeOffset.Parse("2026-01-21T10:00:00Z"),
-            EndUtc: DateTimeOffset.Parse("2026-01-21T11:00:00Z"));
-
-        var res = await client.PostAsJsonAsync($"/api/rooms/{RoomId}/reservations", req);
-        res.StatusCode.Should().Be(HttpStatusCode.Created);
-
-        var body = await res.Content.ReadFromJsonAsync<ReservationResponse>();
-        body.Should().NotBeNull();
-        body!.RoomId.Should().Be(RoomId);
-        body.Title.Should().Be("Team sync");
-        body.Organizer.Should().Be("Eero");
-
-        // Ensure repository was called
-        factory.ReservationRepositoryMock.Verify(x => x.TryAdd(It.IsAny<Reservation>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task CancelReservation_Success_Returns204()
-    {
-        var factory = new ApiFactory();
-
-        var reservationId = Guid.NewGuid();
-        factory.RoomCatalogMock.Setup(x => x.RoomExists(RoomId)).Returns(true);
-
-        factory.ReservationRepositoryMock
-            .Setup(x => x.Remove(RoomId, reservationId))
-            .Returns(true);
-
-        var client = factory.CreateClient();
-
-        var res = await client.DeleteAsync($"/api/rooms/{RoomId}/reservations/{reservationId}");
-        res.StatusCode.Should().Be(HttpStatusCode.NoContent);
-    }
-
-    [Fact]
-    public async Task CancelReservation_NotFound_Returns404()
-    {
-        var factory = new ApiFactory();
-
-        var reservationId = Guid.NewGuid();
-        factory.RoomCatalogMock.Setup(x => x.RoomExists(RoomId)).Returns(true);
-
-        factory.ReservationRepositoryMock
-            .Setup(x => x.Remove(RoomId, reservationId))
-            .Returns(false);
-
-        var client = factory.CreateClient();
-
-        var res = await client.DeleteAsync($"/api/rooms/{RoomId}/reservations/{reservationId}");
-        res.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-}
-
-
-These tests:
-
-spin up your API in-memory
-
-hit real HTTP endpoints with HttpClient
-
-mock all data dependencies used by the endpoints/service
-
-assert correct HTTP status codes + response bodies
-
-5) Run tests
-
-From solution folder:
-
-dotnet test
-
-Notes & common gotchas
-If you get “entry point not found” / WebApplicationFactory issues
-
-You likely forgot:
-
-public partial class Program { }
-
-If swagger runs but tests fail to start
-
-Make sure test project references the API project and uses the right WebApplicationFactory<Program>."
-
----------------------------------------------------------------------------------------------------------------------------
-
-
+---
