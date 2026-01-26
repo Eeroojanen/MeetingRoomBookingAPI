@@ -20,64 +20,64 @@ public sealed class ReservationService : IReservationService
         _clock = clock;
     }
 
-    public Task<Result<Reservation>> CreateAsync(Guid roomId, CreateReservationRequest request)
+    public Result<Reservation> Create(Guid roomId, CreateReservationRequest request)
     {
         if (!_rooms.RoomExists(roomId))
         {
-            return Task.FromResult(Result<Reservation>.Fail(new ApiError(
+            return Result<Reservation>.Fail(new ApiError(
                 "Room not found",
                 $"No meeting room exists with id '{roomId}'.",
-                StatusCodes.Status404NotFound)));
+                StatusCodes.Status404NotFound));
         }
 
         if (string.IsNullOrWhiteSpace(request.Title))
         {
-            return Task.FromResult(Result<Reservation>.Fail(new ApiError(
+            return Result<Reservation>.Fail(new ApiError(
                 "Invalid request",
                 "Title is required.",
-                StatusCodes.Status400BadRequest)));
+                StatusCodes.Status400BadRequest));
         }
 
         if (string.IsNullOrWhiteSpace(request.Organizer))
         {
-            return Task.FromResult(Result<Reservation>.Fail(new ApiError(
+            return Result<Reservation>.Fail(new ApiError(
                 "Invalid request",
                 "Organizer is required.",
-                StatusCodes.Status400BadRequest)));
+                StatusCodes.Status400BadRequest));
         }
 
         if (request.StartUtc.Offset != TimeSpan.Zero || request.EndUtc.Offset != TimeSpan.Zero)
         {
-            return Task.FromResult(Result<Reservation>.Fail(new ApiError(
+            return Result<Reservation>.Fail(new ApiError(
                 "Invalid time zone",
                 "StartUtc and EndUtc must be provided in UTC (offset +00:00).",
-                StatusCodes.Status400BadRequest)));
+                StatusCodes.Status400BadRequest));
         }
 
         if (request.EndUtc <= request.StartUtc)
         {
-            return Task.FromResult(Result<Reservation>.Fail(new ApiError(
+            return Result<Reservation>.Fail(new ApiError(
                 "Invalid time range",
                 "EndUtc must be greater than StartUtc.",
-                StatusCodes.Status400BadRequest)));
+                StatusCodes.Status400BadRequest));
         }
 
         var length = request.EndUtc - request.StartUtc;
         if (length > MaxReservationLength)
         {
-            return Task.FromResult(Result<Reservation>.Fail(new ApiError(
+            return Result<Reservation>.Fail(new ApiError(
                 "Invalid time range",
                 $"Reservation length cannot exceed {MaxReservationLength.TotalHours:0} hours.",
-                StatusCodes.Status400BadRequest)));
+                StatusCodes.Status400BadRequest));
         }
 
         var now = _clock.UtcNow;
         if (request.StartUtc < now)
         {
-            return Task.FromResult(Result<Reservation>.Fail(new ApiError(
+            return Result<Reservation>.Fail(new ApiError(
                 "Reservation in the past",
                 $"StartUtc must be in the future (>= {now:O}). Use UTC timestamps.",
-                StatusCodes.Status400BadRequest)));
+                StatusCodes.Status400BadRequest));
         }
 
         var reservation = new Reservation(
@@ -92,13 +92,13 @@ public sealed class ReservationService : IReservationService
         var (added, conflicting) = _repo.TryAdd(reservation);
         if (!added)
         {
-            return Task.FromResult(Result<Reservation>.Fail(new ApiError(
+            return Result<Reservation>.Fail(new ApiError(
                 "Overlapping reservation",
                 $"Conflicts with an existing reservation ({conflicting!.StartUtc:O} - {conflicting.EndUtc:O}).",
-                StatusCodes.Status409Conflict)));
+                StatusCodes.Status409Conflict));
         }
 
-        return Task.FromResult(Result<Reservation>.Success(reservation));
+        return Result<Reservation>.Success(reservation);
     }
 
     public Result<Unit> Cancel(Guid roomId, Guid reservationId)

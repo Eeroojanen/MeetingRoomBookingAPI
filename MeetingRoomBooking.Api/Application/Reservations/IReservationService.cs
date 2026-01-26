@@ -6,6 +6,6 @@ namespace MeetingRoomBooking.Api.Application.Reservations;
 
 public interface IReservationService
 {
-    Task<Result<Reservation>> CreateAsync(Guid roomId, CreateReservationRequest request);
+    Result<Reservation> Create(Guid roomId, CreateReservationRequest request);
     Result<Unit> Cancel(Guid roomId, Guid reservationId);
 }

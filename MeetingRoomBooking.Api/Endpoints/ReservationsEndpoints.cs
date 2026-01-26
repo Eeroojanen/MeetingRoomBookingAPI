@@ -55,11 +55,11 @@ public static class ReservationsEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         app.MapPost("/api/rooms/{roomId:guid}/reservations",
-            async ([FromRoute] Guid roomId,
-                   CreateReservationRequest request,
-                   IReservationService service) =>
+            ([FromRoute] Guid roomId,
+             CreateReservationRequest request,
+             IReservationService service) =>
             {
-                var outcome = await service.CreateAsync(roomId, request);
+                var outcome = service.Create(roomId, request);
 
                 return outcome.Match<IResult>(
                     created => Results.Created(
